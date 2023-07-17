@@ -58,13 +58,13 @@ class DataLoader(io.LocalStagingIO):
         if "dataset" in parameters:
             pkg_name = parameters["dataset"]
         self.pkg = quilt3.Package.browse(self.packages[pkg_name], self.registry)
-        self.pkg["metadata.csv"].fetch(self.control.get_staging()/"manifest.csv")
-        df_meta = pd.read_csv(self.control.get_staging()/"manifest.csv", index_col="CellId")
+        self.pkg["metadata.csv"].fetch(self.control.get_loaddata_path()/"manifest.csv")
+        df_meta = pd.read_csv(self.control.get_loaddata_path()/"manifest.csv", index_col="CellId")
                 
-        seg_folder = self.control.get_staging()/f"{self.subfolder}/crop_seg"
+        seg_folder = self.control.get_loaddata_path()/f"{self.subfolder}/crop_seg"
         seg_folder.mkdir(parents=True, exist_ok=True)
 
-        raw_folder = self.control.get_staging()/f"{self.subfolder}/crop_raw"
+        raw_folder = self.control.get_loaddata_path()/f"{self.subfolder}/crop_raw"
         raw_folder.mkdir(parents=True, exist_ok=True)
 
         if "test" in parameters:
@@ -74,16 +74,16 @@ class DataLoader(io.LocalStagingIO):
             print(f"Downloading test subset of {pkg_name} dataset.")
             df_meta = self.get_interphase_test_set(df_meta, n=ncells)
             for i, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
-                self.pkg[row["crop_raw"]].fetch(self.control.get_staging()/f"loaddata/{row.crop_raw}")
-                self.pkg[row["crop_seg"]].fetch(self.control.get_staging()/f"loaddata/{row.crop_seg}")
+                self.pkg[row["crop_raw"]].fetch(self.control.get_loaddata_path()/f"loaddata/{row.crop_raw}")
+                self.pkg[row["crop_seg"]].fetch(self.control.get_loaddata_path()/f"loaddata/{row.crop_seg}")
         else:
             self.pkg["crop_seg"].fetch(seg_folder)
             self.pkg["crop_raw"].fetch(raw_folder)
 
         # Append full path to file paths
         for index, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
-            df_meta.at[index, "crop_seg"] = str(self.control.get_staging()/f"loaddata/{row.crop_seg}")
-            df_meta.at[index, "crop_raw"] = str(self.control.get_staging()/f"loaddata/{row.crop_raw}")
+            df_meta.at[index, "crop_seg"] = str(self.control.get_loaddata_path()/f"loaddata/{row.crop_seg}")
+            df_meta.at[index, "crop_raw"] = str(self.control.get_loaddata_path()/f"loaddata/{row.crop_raw}")
 
         return df_meta
 
@@ -104,7 +104,7 @@ class DataLoader(io.LocalStagingIO):
 
     def create_symlinks(self, df):
         for col in ['crop_raw', 'crop_seg']:
-            abs_path_data_folder = self.control.get_staging()/self.subfolder
+            abs_path_data_folder = self.control.get_loaddata_path()/self.subfolder
             (abs_path_data_folder/col).mkdir(parents=True, exist_ok=True)
         for index, row in tqdm(df.iterrows(), total=len(df)):
             idx = str(uuid.uuid4())[:12]

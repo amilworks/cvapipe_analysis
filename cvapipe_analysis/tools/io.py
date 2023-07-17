@@ -43,7 +43,7 @@ class LocalStagingIO:
             if imtype in row:
                 path = Path(row[imtype])
                 if not path.is_file():
-                    path = self.control.get_staging() / f"loaddata/{row[imtype]}"
+                    path = self.control.get_loaddata_path() / f"loaddata/{row[imtype]}"
                 reader = AICSImage(path)
                 channel_names += reader.channel_names
                 img = reader.get_image_data('CZYX', S=0, T=0)
@@ -68,7 +68,7 @@ class LocalStagingIO:
         return imgs_dict
 
     def get_abs_path_to_step_manifest(self, step):
-        return self.control.get_staging() / f"{step}/manifest.csv"
+        return self.control.get_loaddata_path() / f"{step}/manifest.csv"
 
     def write_compute_features_manifest_from_distributed_results(self):
         df = self.load_step_manifest("loaddata")

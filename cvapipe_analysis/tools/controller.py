@@ -48,7 +48,7 @@ class Controller:
             
         NOTE: Written by Amil for web application version of cvapipe.
         """
-        return self.loaddata_path
+        return Path(self.loaddata_path)
         
 
     def get_staging(self):  # shortcut

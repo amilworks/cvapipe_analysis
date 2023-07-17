@@ -21,6 +21,7 @@ class Controller:
         self.config = config
         self.config['log'] = {}
         self.set_abs_path_to_local_staging_folder(config['project']['local_staging'])
+        self.loaddata_path = self.config['loaddata']['path']
         self.data_section = self.config['data']
         self.features_section = self.config['features']
         self.space_section = self.config['shapespace']
@@ -32,6 +33,23 @@ class Controller:
 
     def get_abs_path_to_local_staging_folder(self):
         return self.abs_path_local_staging
+
+    def get_loaddata_path(self):
+        """
+        Retrieves the data loading path from a config.yaml file.
+    
+        This method reads the 'loaddata' key from a YAML configuration file 
+        to identify the path where data should be loaded from. The config file 
+        should be located in the same directory as the project and named 'config.yaml'.
+        It assumes the 'loaddata' key is at the root level of the YAML structure.
+    
+        Returns:
+            str: The path to the data as specified in the config.yaml file.
+            
+        NOTE: Written by Amil for web application version of cvapipe.
+        """
+        return self.loaddata_path
+        
 
     def get_staging(self):  # shortcut
         return self.get_abs_path_to_local_staging_folder()

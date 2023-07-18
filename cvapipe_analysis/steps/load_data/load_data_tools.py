@@ -68,7 +68,7 @@ class DataLoader(io.LocalStagingIO):
         raw_folder.mkdir(parents=True, exist_ok=True)
 
         if "test" in parameters:
-            ncells = 12
+            ncells = 2
             if "ncells" in parameters:
                 ncells = int(parameters["ncells"])
             print(f"Downloading test subset of {pkg_name} dataset.")

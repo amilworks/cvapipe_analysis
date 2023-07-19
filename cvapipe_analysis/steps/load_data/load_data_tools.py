@@ -44,6 +44,7 @@ class DataLoader(io.LocalStagingIO):
         super().__init__(control)
         self.subfolder = 'loaddata'
         self.s3 = boto3.resource('s3')
+        self.bucket_name = "cvapipe-s3"
 
     def load(self, parameters):
         if any(p in parameters for p in ["csv", "fmsid"]):

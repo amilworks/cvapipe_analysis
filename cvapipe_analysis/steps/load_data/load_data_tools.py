@@ -103,7 +103,7 @@ class DataLoader(io.LocalStagingIO):
         
         try:
             self.pkg["metadata.csv"].fetch(self.control.get_loaddata_path()+"/manifest.csv")
-            obj = self.s3.Object(bucket_name, self.control.get_loaddata_path()+"/manifest.csv")
+            obj = self.s3.Object(self.bucket_name, self.control.get_loaddata_path()+"/manifest.csv")
             df_meta = pd.read_csv(obj.get()['Body'], index_col="CellId")
     
             if "test" in parameters:

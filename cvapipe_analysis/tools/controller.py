@@ -36,7 +36,8 @@ class Controller:
 
     def set_abs_path_to_local_staging_folder(self, path):
         # return self.abs_path_local_staging = Path(path)
-        return self.abs_path_local_staging = self.check_path(path)
+        path = self.check_path(path)
+        return self.abs_path_local_staging = path
 
     def get_abs_path_to_local_staging_folder(self):
         return self.abs_path_local_staging

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
+from urllib.parse import urlparse
 from skimage import io as skio
 from aicsshparam import shtools
 from aicsimageio import AICSImage
@@ -67,8 +68,18 @@ class LocalStagingIO:
                     imgs_dict[ch] = img
         return imgs_dict
 
+    # def get_abs_path_to_step_manifest(self, step):
+    #     return self.control.get_loaddata_path() / f"{step}/manifest.csv"
+
     def get_abs_path_to_step_manifest(self, step):
-        return self.control.get_loaddata_path() / f"{step}/manifest.csv"
+        base_path = self.control.get_loaddata_path()
+        if base_path.startswith('s3://'):
+            # Handle S3 paths
+            return base_path + '/' + f"{step}/manifest.csv"
+        else:
+            # Handle local paths
+            return Path(base_path) / f"{step}/manifest.csv"
+
 
     def write_compute_features_manifest_from_distributed_results(self):
         df = self.load_step_manifest("loaddata")

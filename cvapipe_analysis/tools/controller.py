@@ -28,8 +28,15 @@ class Controller:
         self.distribute_section = self.config['distribute']
         self.param_section = self.config['parameterization']
 
+    def check_path(self, path):
+        if path.startswith('s3://'):
+            return path
+        else:
+            return Path(path)
+
     def set_abs_path_to_local_staging_folder(self, path):
-        self.abs_path_local_staging = Path(path)
+        # return self.abs_path_local_staging = Path(path)
+        return self.abs_path_local_staging = self.check_path(path)
 
     def get_abs_path_to_local_staging_folder(self):
         return self.abs_path_local_staging

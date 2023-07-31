@@ -412,7 +412,7 @@ class DataProducer(LocalStagingIO):
 
     def get_output_file_path(self):
         subpath = f"{self.subfolder}/{self.get_output_file_name()}"
-        return path = self.append_subfolder_to_path(self.control.get_staging(), subpath)
+        return self.append_subfolder_to_path(self.control.get_staging(), subpath)
 
     def check_output_exist(self):
         path_to_output_file = self.get_output_file_path()

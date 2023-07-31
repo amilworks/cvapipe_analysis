@@ -39,7 +39,7 @@ class LocalStagingIO:
 
     def is_s3_path(self, path):
         # Function to check if a given path is an S3 path
-        parsed_url = urllib.parse.urlparse(path)
+        parsed_url = urlparse(path)
         return parsed_url.scheme == 's3'
 
     def append_subfolder_to_path(self, path, subfolder):

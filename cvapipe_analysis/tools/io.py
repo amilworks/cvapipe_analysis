@@ -46,7 +46,7 @@ class LocalStagingIO:
         # Function to append a subfolder to the given path, depending on whether it's an S3 path or not
         if self.is_s3_path(path):
             # If it's an S3 path, append the subfolder to the key
-            parsed_url = urllib.parse.urlparse(path)
+            parsed_url = urlparse(path)
             bucket = parsed_url.netloc
             key = parsed_url.path.lstrip('/')
             s3 = boto3.resource('s3')

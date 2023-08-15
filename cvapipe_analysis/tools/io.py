@@ -38,8 +38,11 @@ class LocalStagingIO:
         self.subfolder = subfolder
 
     def is_s3_path(self, path):
+        # Convert the PosixPath object to a string
+        path_str = str(path)
+        
         # Function to check if a given path is an S3 path
-        parsed_url = urlparse(path)
+        parsed_url = urlparse(path_str)
         return parsed_url.scheme == 's3'
 
     def append_subfolder_to_path(self, path, subfolder):

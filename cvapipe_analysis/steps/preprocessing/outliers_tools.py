@@ -533,7 +533,7 @@ def outliers_removal(df, output_dir, log, detect_based_on_structure_features=Tru
 
     # %% All metrics including height
     L = len(cellnuc_metrics)
-    pairs = np.zeros((int(L * (L - 1) / 2), 2)).astype(np.int)
+    pairs = np.zeros((int(L * (L - 1) / 2), 2)).astype(int)
     i = 0
     for f1 in np.arange(L):
         for f2 in np.arange(L):

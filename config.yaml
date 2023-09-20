@@ -4,6 +4,9 @@ project:
     local_staging: "your_path_to/local_staging_variance"
     overwrite: off
 
+loaddata:
+    path: "amilworks/run1"
+
 data:
     cell:
         alias: MEM

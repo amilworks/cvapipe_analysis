@@ -42,10 +42,8 @@ class ComputeFeatures(Step):
                 return None
             
             calculator = FeatureCalculator(control)
-            calculator.set_row(df.loc[df.index[0]])
-            calculator.workflow()
-            # with concurrent.futures.ProcessPoolExecutor(control.get_ncores()) as executor:
-            #     executor.map(calculator.execute, [row for _,row in df.iterrows()])
+            with concurrent.futures.ProcessPoolExecutor(control.get_ncores()) as executor:
+                executor.map(calculator.execute, [row for _,row in df.iterrows()])
 
             log.info(f"Loading results...")
             df_results = calculator.load_results_in_single_dataframe()

@@ -96,12 +96,7 @@ class LocalStagingIO:
 
     def get_abs_path_to_step_manifest(self, step):
         base_path = self.control.get_loaddata_path()
-        if base_path.startswith('s3://'):
-            # Handle S3 paths
-            return base_path + '/' + f"{step}/manifest.csv"
-        else:
-            # Handle local paths
-            return Path(base_path) / f"{step}/manifest.csv"
+        return Path(base_path) / f"{step}/manifest.csv"
 
 
     def write_compute_features_manifest_from_distributed_results(self):

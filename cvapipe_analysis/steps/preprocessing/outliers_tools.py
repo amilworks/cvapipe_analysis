@@ -92,7 +92,7 @@ def splot(
             )
             ax.plot(x, y, "b.", markersize=ms)
             if len(remove_cells) > 0:
-                cr = remove_cells[f"{metric} vs {structure_metric}"].astype(np.int)
+                cr = remove_cells[f"{metric} vs {structure_metric}"].astype(int)
                 _, i_cr, _ = np.intersect1d(pos, cr, return_indices=True)
                 if len(i_cr) > 0:
                     ax.plot(x[i_cr], y[i_cr], "r.", markersize=2 * ms)
@@ -308,9 +308,9 @@ def oplot(
 
         if len(remove_cells) > 0:
             try:
-                cr = remove_cells[f"{metricX} vs {metricY}"].astype(np.int)
+                cr = remove_cells[f"{metricX} vs {metricY}"].astype(int)
             except:
-                cr = remove_cells[f"{metricY} vs {metricX}"].astype(np.int)
+                cr = remove_cells[f"{metricY} vs {metricX}"].astype(int)
             ax.plot(x[cr], y[cr], "r.", markersize=2 * ms)
 
         xticks = ax.get_xticks()

@@ -6,6 +6,9 @@ from tqdm import tqdm
 from skimage import io as skio
 from joblib import Parallel, delayed
 
+# Speedups 
+import torch
+
 from cvapipe_analysis.tools import io, general, controller
 
 class CorrelationCalculator(io.DataProducer):
@@ -52,7 +55,10 @@ class CorrelationCalculator(io.DataProducer):
 
     def workflow(self):
         self.load_representations()
-        self.correlate_all()
+        # Compile the numpy function via OpenMP
+        compiled_fn = torch.compile(correlate_all)
+        compiled_fn()
+        #self.correlate_all()
         return
 
     def get_output_file_name(self):

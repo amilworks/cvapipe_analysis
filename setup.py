@@ -71,7 +71,9 @@ requirements = [
     "quilt3",
     "ffmpeg",
     "jupyterlab", 
-    "ipywidgets"
+    "ipywidgets",
+    "torch"
+
 ]
 
 extra_requirements = {

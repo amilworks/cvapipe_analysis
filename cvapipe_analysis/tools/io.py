@@ -3,10 +3,12 @@ import vtk
 import errno
 import logging
 import concurrent
+import boto3
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
+from urllib.parse import urlparse
 from skimage import io as skio
 from aicsshparam import shtools
 from aicsimageio import AICSImage
@@ -35,6 +37,28 @@ class LocalStagingIO:
         self.control = control
         self.subfolder = subfolder
 
+    def is_s3_path(self, path):
+        # Convert the PosixPath object to a string
+        path_str = str(path)
+        
+        # Function to check if a given path is an S3 path
+        parsed_url = urlparse(path_str)
+        return parsed_url.scheme == 's3'
+
+    def append_subfolder_to_path(self, path, subfolder):
+        # Function to append a subfolder to the given path, depending on whether it's an S3 path or not
+        if self.is_s3_path(path):
+            # If it's an S3 path, append the subfolder to the key
+            parsed_url = urlparse(path)
+            bucket = parsed_url.netloc
+            key = parsed_url.path.lstrip('/')
+            s3 = boto3.resource('s3')
+            s3_path = f"s3://{bucket}/{key}/{subfolder}"
+            return s3_path
+        else:
+            # If it's not an S3 path, simply append the subfolder to the path
+            return Path(f"{path}/{subfolder}")
+
     def get_single_cell_images(self, row, return_stack=False):
         imgs = []
         channel_names = []
@@ -43,7 +67,7 @@ class LocalStagingIO:
             if imtype in row:
                 path = Path(row[imtype])
                 if not path.is_file():
-                    path = self.control.get_staging() / f"loaddata/{row[imtype]}"
+                    path = self.control.get_loaddata_path() / f"loaddata/{row[imtype]}"
                 reader = AICSImage(path)
                 channel_names += reader.channel_names
                 img = reader.get_image_data('CZYX', S=0, T=0)
@@ -67,8 +91,13 @@ class LocalStagingIO:
                     imgs_dict[ch] = img
         return imgs_dict
 
+    # def get_abs_path_to_step_manifest(self, step):
+    #     return self.control.get_loaddata_path() / f"{step}/manifest.csv"
+
     def get_abs_path_to_step_manifest(self, step):
-        return self.control.get_staging() / f"{step}/manifest.csv"
+        base_path = self.control.get_loaddata_path()
+        return Path(base_path) / f"{step}/manifest.csv"
+
 
     def write_compute_features_manifest_from_distributed_results(self):
         df = self.load_step_manifest("loaddata")
@@ -105,8 +134,8 @@ class LocalStagingIO:
 
     def read_map_point_mesh(self, alias):
         row = self.row
-        path = f"shapemode/avgshape/{alias}_{row.shape_mode}_{row.mpId}.vtk"
-        path = self.control.get_staging() / path
+        subpath = f"shapemode/avgshape/{alias}_{row.shape_mode}_{row.mpId}.vtk"
+        path = self.append_subfolder_to_path(self.control.get_staging(), subpath)
         if not path.is_file():
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
         return self.read_vtk_polydata(path)
@@ -114,16 +143,16 @@ class LocalStagingIO:
     def read_mean_shape_mesh(self, alias):
         sm = self.control.get_shape_modes()
         mpIdc = self.control.get_center_map_point_index()
-        path = f"shapemode/avgshape/{alias}_{sm[0]}_{mpIdc}.vtk"
-        path = self.control.get_staging() / path
+        subpath = f"shapemode/avgshape/{alias}_{sm[0]}_{mpIdc}.vtk"
+        path = self.append_subfolder_to_path(self.control.get_staging(), subpath)
         if not path.is_file():
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
         return self.read_vtk_polydata(path)
 
     def read_parameterized_intensity(self, index, return_intensity_names=False):
         code, intensity_names = None, []
-        path = f"parameterization/representations/{index}.tif"
-        path = self.control.get_staging() / path
+        subpath = f"parameterization/representations/{index}.tif"
+        path = self.append_subfolder_to_path(self.control.get_staging(), subpath)
         if path.is_file():
             code = AICSImage(path)
             intensity_names = code.channel_names
@@ -169,8 +198,8 @@ class LocalStagingIO:
         fname = self.get_aggrep_file_name(row)
         if normalized:
             fname = fname.replace(".tif", "_norm.tif")
-        path = f"aggregation/repsagg/{fname}"
-        path = self.control.get_staging() / path
+        subpath = f"aggregation/repsagg/{fname}"
+        path = self.append_subfolder_to_path(self.control.get_staging(), subpath)
         if not path.is_file():
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
         code = AICSImage(path)
@@ -184,7 +213,7 @@ class LocalStagingIO:
         the concordance results are loaded. Further investigation is needed
         here'''
         if path is None:
-            path = self.control.get_staging() / self.subfolder
+            path = self.append_subfolder_to_path(self.control.get_staging(), self.subfolder)
         files = [{"csv": path/f} for f in os.listdir(path)]
         with concurrent.futures.ProcessPoolExecutor(self.control.get_ncores()) as executor:
             df = pd.concat(
@@ -380,8 +409,8 @@ class DataProducer(LocalStagingIO):
         return path_to_output_file
 
     def get_output_file_path(self):
-        path = f"{self.subfolder}/{self.get_output_file_name()}"
-        return self.control.get_staging() / path
+        subpath = f"{self.subfolder}/{self.get_output_file_name()}"
+        return self.append_subfolder_to_path(self.control.get_staging(), subpath)
 
     def check_output_exist(self):
         path_to_output_file = self.get_output_file_path()

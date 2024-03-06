@@ -40,7 +40,7 @@ class ComputeFeatures(Step):
                 log.info(f"Multiple jobs have been launched. Please come back when the calculation is complete.")
 
                 return None
-
+            
             calculator = FeatureCalculator(control)
             calculator.set_row(df.loc[df.index[0])
             calculator.workflow()

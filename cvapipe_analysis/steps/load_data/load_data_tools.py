@@ -5,6 +5,8 @@ import concurrent
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 from cvapipe_analysis.tools import io
 
@@ -41,6 +43,8 @@ class DataLoader(io.LocalStagingIO):
     def __init__(self, control):
         super().__init__(control)
         self.subfolder = 'loaddata'
+        self.s3 = boto3.resource('s3')
+        self.bucket_name = "cvapipe-s3"
 
     def load(self, parameters):
         if any(p in parameters for p in ["csv", "fmsid"]):
@@ -53,39 +57,78 @@ class DataLoader(io.LocalStagingIO):
     def drop_aliases_related_columns(self, df):
         return df[[f for f in df.columns if not any(w in f for w in self.control.get_data_aliases())]]
 
+    # def download_quilt_data(self, parameters):
+    #     pkg_name = "default"
+    #     if "dataset" in parameters:
+    #         pkg_name = parameters["dataset"]
+    #     self.pkg = quilt3.Package.browse(self.packages[pkg_name], self.registry)
+    #     self.pkg["metadata.csv"].fetch(self.control.get_loaddata_path()/"manifest.csv")
+    #     df_meta = pd.read_csv(self.control.get_loaddata_path()/"manifest.csv", index_col="CellId")
+                
+    #     seg_folder = self.control.get_loaddata_path()/f"{self.subfolder}/crop_seg"
+    #     seg_folder.mkdir(parents=True, exist_ok=True)
+
+    #     raw_folder = self.control.get_loaddata_path()/f"{self.subfolder}/crop_raw"
+    #     raw_folder.mkdir(parents=True, exist_ok=True)
+
+    #     if "test" in parameters:
+    #         ncells = 2
+    #         if "ncells" in parameters:
+    #             ncells = int(parameters["ncells"])
+    #         print(f"Downloading test subset of {pkg_name} dataset.")
+    #         df_meta = self.get_interphase_test_set(df_meta, n=ncells)
+    #         for i, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
+    #             self.pkg[row["crop_raw"]].fetch(self.control.get_loaddata_path()/f"loaddata/{row.crop_raw}")
+    #             self.pkg[row["crop_seg"]].fetch(self.control.get_loaddata_path()/f"loaddata/{row.crop_seg}")
+    #     else:
+    #         self.pkg["crop_seg"].fetch(seg_folder)
+    #         self.pkg["crop_raw"].fetch(raw_folder)
+
+    #     # Append full path to file paths
+    #     for index, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
+    #         df_meta.at[index, "crop_seg"] = str(self.control.get_loaddata_path()/f"loaddata/{row.crop_seg}")
+    #         df_meta.at[index, "crop_raw"] = str(self.control.get_loaddata_path()/f"loaddata/{row.crop_raw}")
+
+    #     return df_meta
+
+
+
+
+    
     def download_quilt_data(self, parameters):
         pkg_name = "default"
         if "dataset" in parameters:
             pkg_name = parameters["dataset"]
         self.pkg = quilt3.Package.browse(self.packages[pkg_name], self.registry)
-        self.pkg["metadata.csv"].fetch(self.control.get_loaddata_path()/"manifest.csv")
-        df_meta = pd.read_csv(self.control.get_loaddata_path()/"manifest.csv", index_col="CellId")
-                
-        seg_folder = self.control.get_loaddata_path()/f"{self.subfolder}/crop_seg"
-        seg_folder.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            self.pkg["metadata.csv"].fetch(self.control.get_loaddata_path()+"/manifest.csv")
+            obj = self.s3.Object(self.bucket_name, self.control.get_loaddata_path()+"/manifest.csv")
+            df_meta = pd.read_csv(obj.get()['Body'], index_col="CellId")
+    
+            if "test" in parameters:
+                ncells = 2
+                if "ncells" in parameters:
+                    ncells = int(parameters["ncells"])
+                print(f"Downloading test subset of {pkg_name} dataset.")
+                df_meta = self.get_interphase_test_set(df_meta, n=ncells)
+                for i, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
+                    self.pkg[row["crop_raw"]].fetch(self.control.get_loaddata_path()+f"/loaddata/{row.crop_raw}")
+                    self.pkg[row["crop_seg"]].fetch(self.control.get_loaddata_path()+f"/loaddata/{row.crop_seg}")
+            else:
+                self.pkg["crop_seg"].fetch(self.control.get_loaddata_path()+f"/{self.subfolder}/crop_seg")
+                self.pkg["crop_raw"].fetch(self.control.get_loaddata_path()+f"/{self.subfolder}/crop_raw")
+    
+            # Append full path to file paths
+            for index, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
+                df_meta.at[index, "crop_seg"] = self.control.get_loaddata_path()+f"/loaddata/{row.crop_seg}"
+                df_meta.at[index, "crop_raw"] = self.control.get_loaddata_path()+f"/loaddata/{row.crop_raw}"
+    
+            return df_meta
+        except NoCredentialsError:
+            print("No AWS credentials found")
+            return None
 
-        raw_folder = self.control.get_loaddata_path()/f"{self.subfolder}/crop_raw"
-        raw_folder.mkdir(parents=True, exist_ok=True)
-
-        if "test" in parameters:
-            ncells = 12
-            if "ncells" in parameters:
-                ncells = int(parameters["ncells"])
-            print(f"Downloading test subset of {pkg_name} dataset.")
-            df_meta = self.get_interphase_test_set(df_meta, n=ncells)
-            for i, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
-                self.pkg[row["crop_raw"]].fetch(self.control.get_loaddata_path()/f"loaddata/{row.crop_raw}")
-                self.pkg[row["crop_seg"]].fetch(self.control.get_loaddata_path()/f"loaddata/{row.crop_seg}")
-        else:
-            self.pkg["crop_seg"].fetch(seg_folder)
-            self.pkg["crop_raw"].fetch(raw_folder)
-
-        # Append full path to file paths
-        for index, row in tqdm(df_meta.iterrows(), total=len(df_meta)):
-            df_meta.at[index, "crop_seg"] = str(self.control.get_loaddata_path()/f"loaddata/{row.crop_seg}")
-            df_meta.at[index, "crop_raw"] = str(self.control.get_loaddata_path()/f"loaddata/{row.crop_raw}")
-
-        return df_meta
 
     def download_local_data(self, parameters):
         use_fms = use_fms="fmsid" in parameters

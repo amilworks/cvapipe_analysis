@@ -28,8 +28,16 @@ class Controller:
         self.distribute_section = self.config['distribute']
         self.param_section = self.config['parameterization']
 
+    def check_path(self, path):
+        if path.startswith('s3://'):
+            return path
+        else:
+            return Path(path)
+
     def set_abs_path_to_local_staging_folder(self, path):
-        self.abs_path_local_staging = Path(path)
+        # return self.abs_path_local_staging = Path(path)
+        self.abs_path_local_staging = self.check_path(path)
+        return self.abs_path_local_staging
 
     def get_abs_path_to_local_staging_folder(self):
         return self.abs_path_local_staging
@@ -48,7 +56,7 @@ class Controller:
             
         NOTE: Written by Amil for web application version of cvapipe.
         """
-        return self.loaddata_path
+        return self.check_path(self.loaddata_path)
         
 
     def get_staging(self):  # shortcut
